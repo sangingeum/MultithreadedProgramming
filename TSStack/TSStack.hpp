@@ -58,7 +58,7 @@ template<class T>
 std::shared_ptr<T> TSStack<T>::tryPop() {
 	std::scoped_lock lock{m_mutex};
 	if (m_data.empty()) return std::make_shared<T>(nullptr);
-	auto result = std::make_shared<T>(m_data.top());
+	auto result = std::make_shared<T>(std::move(m_data.top()));
 	m_data.pop();
 	return result;
 }
@@ -77,7 +77,7 @@ template<class T>
 std::shared_ptr<T> TSStack<T>::waitAndPop() {
 	std::unique_lock lock{m_mutex};
 	m_cond.wait(lock, [this]() {return !m_data.empty(); });
-	auto result = std::make_shared<T>(m_data.top());
+	auto result = std::make_shared<T>(std::move(m_data.top()));
 	m_data.pop();
 	return result;
 }
