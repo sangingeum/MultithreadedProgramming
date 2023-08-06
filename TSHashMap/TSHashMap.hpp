@@ -8,15 +8,22 @@
 #include <unordered_map>
 
 /* // How to specialize std::hash<T>
-namespace std {
-  template <> 
-  struct hash<Key>
-  {
-    size_t operator()(const Key & x) const
-    {
-      return hash<int>()(x.value);
+class Student {
+public:
+    size_t id;
+    std::string name;
+    bool operator==(const Student& other) const {
+        return id == other.id;
     }
-  };
+};
+
+namespace std {
+    template<>
+    struct hash<Student> {
+        size_t operator()(const Student& student) const {
+            return hash<size_t>()(student.id);
+        }
+    };
 }
 */
 
