@@ -21,7 +21,7 @@ public:
 	bool empty() const;
 };
 
-
+// Push and notify any waiting thread
 template <class T>
 void TSQueue<T>::push(T item) {
 	auto itemPtr = std::make_shared<T>(std::move(item));
@@ -30,6 +30,8 @@ void TSQueue<T>::push(T item) {
 	m_cond.notify_one();
 }
 
+// Try to pop a pushed item
+// If successful, return true. Otherwise, return false
 template <class T>
 bool TSQueue<T>::tryPop(T& result) {
 	std::scoped_lock lock{m_mutex};
@@ -39,6 +41,9 @@ bool TSQueue<T>::tryPop(T& result) {
 	return true;
 }
 
+// Try to pop a pushed item
+// If successful, return a shared pointer to the popped item
+// Otherwise, return an empty shared pointer
 template <class T>
 std::shared_ptr<T> TSQueue<T>::tryPop() {
 	std::scoped_lock lock{m_mutex};
@@ -48,6 +53,7 @@ std::shared_ptr<T> TSQueue<T>::tryPop() {
 	return result;
 }
 
+// Wait for a pushed item and then pop it
 template <class T>
 void TSQueue<T>::waitAndPop(T& result) {
 	std::unique_lock lock{m_mutex};
@@ -56,6 +62,7 @@ void TSQueue<T>::waitAndPop(T& result) {
 	m_data.pop();
 }
 
+// Wait for a pushed item and then pop it
 template <class T>
 std::shared_ptr<T> TSQueue<T>::waitAndPop() {
 	std::unique_lock lock{m_mutex};
@@ -65,6 +72,7 @@ std::shared_ptr<T> TSQueue<T>::waitAndPop() {
 	return result;
 }
 
+// Check if the stack is empty
 template <class T>
 bool TSQueue<T>::empty() const {
 	std::scoped_lock lock{m_mutex};
