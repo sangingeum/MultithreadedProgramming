@@ -8,11 +8,11 @@
 #include <latch>
 
 constexpr size_t iter {2};
-std::latch latch{iter * 3}; // Let the threads start at the same time
+std::latch latch{iter * 3}; // Make sure the threads start at the same time
 
 void push(TSQueue<int>& queue) {
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 1000; ++i) {
+	for (size_t i = 0; i < 10000; ++i) {
 		queue.push(i);
 	}
 }
@@ -20,7 +20,7 @@ void push(TSQueue<int>& queue) {
 std::vector<int> waitAndPop(TSQueue<int>& queue) {
 	std::vector<int> result;
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 500; ++i) {
+	for (size_t i = 0; i < 5000; ++i) {
 		int item;
 		queue.waitAndPop(item);
 		result.push_back(item);
@@ -31,7 +31,7 @@ std::vector<int> waitAndPop(TSQueue<int>& queue) {
 std::vector<int> tryPop(TSQueue<int>& queue) {
 	std::vector<int> result;
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 500; ++i) {
+	for (size_t i = 0; i < 5000; ++i) {
 		int item;
 		while(!queue.tryPop(item)){}
 		result.push_back(item);
@@ -46,19 +46,19 @@ int main() {
 	std::vector<std::future<std::vector<int>>> futures;
 	std::vector<std::jthread> threads;
 	
-	// Launch threads that push 1000 integers to the queue 
+	// Launch threads that push 10000 integers to the queue 
 	for (size_t i = 0; i < iter; ++i) {
 		threads.emplace_back(push, std::ref(queue));
 	}
 
-	// Launch threads that pops 500 pushed integers using the waitAndPop function
+	// Launch threads that pops 5000 pushed integers using the waitAndPop function
 	for (size_t i = 0; i < iter; ++i) {
 		std::packaged_task<std::vector<int>(TSQueue<int>&)> popTask{waitAndPop};
 		futures.emplace_back(popTask.get_future());
 		threads.emplace_back(std::move(popTask), std::ref(queue));
 	}
 
-	// Launch threads that pops 500 pushed integers using the tryPop function
+	// Launch threads that pops 5000 pushed integers using the tryPop function
 	for (size_t i = 0; i < iter; ++i) {
 		std::packaged_task<std::vector<int>(TSQueue<int>&)> popTask{tryPop};
 		futures.emplace_back(popTask.get_future());

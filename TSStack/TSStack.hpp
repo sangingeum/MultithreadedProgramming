@@ -6,6 +6,7 @@
 // of the data structure have been broken by other threads
 //2. Avoid race conditions inherent in the interface of the data structure
 
+// Thread-safe Stack implemented with a mutex and a condition variable
 template<class T>
 class TSStack
 {
@@ -15,6 +16,7 @@ private:
 	std::condition_variable m_cond;
 public:
 	TSStack() = default;
+	TSStack(const TSStack& other) = delete;
 	TSStack& operator=(const TSStack& other) = delete;
 	void push(T item);
 	bool tryPop(T& result);

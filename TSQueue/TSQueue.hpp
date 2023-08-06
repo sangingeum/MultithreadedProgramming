@@ -2,6 +2,8 @@
 #include <queue>
 #include <mutex>
 #include <memory>
+
+// Thread-safe Queue implemented with a mutex and a condition variable
 template <class T>
 class TSQueue
 {
