@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <cassert>
 
+
 void push(TSQueue<int>& queue) {
 	for (size_t i = 0; i < 1000; ++i) {
 		queue.push(i);
@@ -28,6 +29,7 @@ int main() {
 	std::vector<std::future<std::vector<int>>> futures;
 	std::vector<std::jthread> threads;
 
+
 	// Launch threads that push integers to the queue 
 	for (size_t i = 0; i < 3; ++i) {
 		threads.emplace_back(push, std::ref(queue));
@@ -39,6 +41,7 @@ int main() {
 		futures.emplace_back(popTask.get_future());
 		threads.emplace_back(std::move(popTask), std::ref(queue));
 	}
+
 
 	// Count the occurrences of each number
 	std::unordered_map<int, int> dist;
