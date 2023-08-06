@@ -10,12 +10,11 @@ template<class T>
 class TSStack
 {
 private:
-	std::stack<T> m_data;
+	std::stack<std::shared_ptr<T>> m_data;
 	mutable std::mutex m_mutex;
 	std::condition_variable m_cond;
 public:
 	TSStack() = default;
-	TSStack(const TSStack& other);
 	TSStack& operator=(const TSStack& other) = delete;
 	void push(T item);
 	bool tryPop(T& result);
@@ -25,18 +24,13 @@ public:
 	bool empty() const;
 };
 
-// Copy constructor
-template<class T>
-TSStack<T>::TSStack(const TSStack& other) {
-	std::scoped_lock lock(other.m_mutex);
-	m_data = other.m_data;
-}
 
 // Push and notify any waiting thread
 template<class T>
 void TSStack<T>::push(T item) {
+	auto itemPtr = std::make_shared<T>(std::move(item));
 	std::scoped_lock lock{m_mutex};
-	m_data.push(item);
+	m_data.push(itemPtr);
 	m_cond.notify_one();
 }
 
@@ -46,19 +40,19 @@ template<class T>
 bool TSStack<T>::tryPop(T& result) {
 	std::scoped_lock lock{m_mutex};
 	if (m_data.empty()) return false;
-	result = std::move(m_data.top());
+	result = std::move(*m_data.top());
 	m_data.pop();
 	return true;
 }
 
 // Try to pop a pushed item
 // If successful, return a shared pointer to the popped item
-// Otherwise, return a shared pointer initialized with nullptr
+// Otherwise, return an empty shared pointer
 template<class T>
 std::shared_ptr<T> TSStack<T>::tryPop() {
 	std::scoped_lock lock{m_mutex};
-	if (m_data.empty()) return std::make_shared<T>(nullptr);
-	auto result = std::make_shared<T>(std::move(m_data.top()));
+	if (m_data.empty()) return std::make_shared<T>();
+	auto result = std::move(m_data.top());
 	m_data.pop();
 	return result;
 }
@@ -68,7 +62,7 @@ template<class T>
 void TSStack<T>::waitAndPop(T& result) {
 	std::unique_lock lock{m_mutex};
 	m_cond.wait(lock, [this]() {return !m_data.empty(); });
-	result = std::move(m_data.top());
+	result = std::move(*m_data.top());
 	m_data.pop();
 }
 
@@ -77,7 +71,7 @@ template<class T>
 std::shared_ptr<T> TSStack<T>::waitAndPop() {
 	std::unique_lock lock{m_mutex};
 	m_cond.wait(lock, [this]() {return !m_data.empty(); });
-	auto result = std::make_shared<T>(std::move(m_data.top()));
+	auto result = std::move(m_data.top());
 	m_data.pop();
 	return result;
 }
