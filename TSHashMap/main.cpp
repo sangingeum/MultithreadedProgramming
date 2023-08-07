@@ -1,56 +1,89 @@
 #include "TSHashMap.hpp"
-#include <string>
 #include <iostream>
+#include <format>
 #include <thread>
 #include <future>
 #include <latch>
 #include <random>
 
-std::latch latch{6};
+constexpr size_t numThread{ 2 }; // The number of threads for each test
+constexpr size_t numIter{ 10000 };
+std::latch latch{numThread * 4};
 
-void update(TSHashMap<size_t, float>& map, const std::vector<size_t>& ids) {
+// Test the addOrUpdate method [exclusive lock]
+void updateTest(TSHashMap<size_t, float>& map) {
 	std::srand(std::time(nullptr));
+	size_t added = 0;
 	latch.arrive_and_wait();
-	for (auto id : ids) {
-		map.addOrUpdate(id, std::rand()*0.01f);
+	for (size_t i = 0; i < numIter; ++i) {
+		if (map.addOrUpdate(std::rand(), std::rand() * 0.01f))
+			added++;
 	}
+	std::cout << std::format("added {} entities, updated {} entities\n", added, numIter - added);
 }
-void read(TSHashMap<size_t, float>& map, const std::vector<size_t>& ids) {
+
+// Test the get method [shared lock]
+void readTest(TSHashMap<size_t, float>& map) {
+	std::srand(std::time(nullptr));
+	size_t read = 0;
 	latch.arrive_and_wait();
-	for (auto id : ids) {
-		map.get(id);
+	for (size_t i = 0; i < numIter; ++i) {
+		float value;
+		if (map.get(std::rand(), value))
+			read++;
 	}
+	std::cout << std::format("read {} entities\n", read);
 }
-void snapShot(TSHashMap<size_t, float>& map, const std::vector<size_t>& ids) {
+
+// Test the snapShot method [shared lock]
+void snapShotTest(TSHashMap<size_t, float>& map) {
+	size_t snapShots = 0;
 	latch.arrive_and_wait();
 	for (size_t i = 0; i < 10; ++i) {
 		map.snapShot();
+		snapShots++;
 	}
+	std::cout << std::format("Took {} snapShots\n", snapShots);
 }
 
-std::vector<size_t> init(TSHashMap<size_t, float>& map) {
-	std::vector<size_t> ids;
-	std::srand(std::time(nullptr));
-	for (size_t i = 0; i < 1000; ++i) {
-		auto id = std::rand();
-		ids.push_back(id);
-		map.addOrUpdate(id, i * 0.1);
+// Test the remove method [exclusive lock]
+void removeTest(TSHashMap<size_t, float>& map) {
+	std::srand(3);
+	size_t removed = 0;
+	latch.arrive_and_wait();
+	for (size_t i = 0; i < numIter; ++i) {
+		if (map.remove(std::rand()))
+			removed++;
 	}
-	return ids;
+	std::cout << std::format("removed {} entities\n", removed);
 }
 
 int main() {
-	TSHashMap<size_t, float> map(1087);
-	std::vector<size_t> ids = init(map);
+	// Create a hash map with 5099 buckets
+	// The key type is size_t and value type is float
+	TSHashMap<size_t, float> map(5099);
+
+	// Create a vector to store threads
 	std::vector<std::jthread> threads;
+	// Lanch test threads
+	for (size_t i = 0; i < numThread; ++i)
+		threads.emplace_back(snapShotTest, std::ref(map));
+	for (size_t i = 0; i < numThread; ++i)
+		threads.emplace_back(updateTest, std::ref(map));
+	for (size_t i = 0; i < numThread; ++i)
+		threads.emplace_back(readTest, std::ref(map));
+	for (size_t i = 0; i < numThread; ++i)
+		threads.emplace_back(removeTest, std::ref(map));
 
-	for (size_t i = 0; i < 2; ++i)
-		threads.emplace_back(snapShot, std::ref(map), std::cref(ids));
-	for (size_t i = 0; i < 2; ++i)
-		threads.emplace_back(update, std::ref(map), std::cref(ids));
-	for (size_t i = 0; i < 2; ++i)
-		threads.emplace_back(read, std::ref(map), std::cref(ids));
-
-
+	/* Possible result:
+	removed 457 entities
+	read 5301 entities
+	added 8729 entities, updated 1271 entities
+	read 5256 entities
+	added 227 entities, updated 9773 entities
+	removed 960 entities
+	Took 10 snapShots
+	Took 10 snapShots
+	*/
 	return 0;
 }
