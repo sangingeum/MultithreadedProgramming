@@ -26,7 +26,7 @@ namespace std {
 }
 */
 
-// Thread-safe hash map
+// Thread-safe hash map implemented with shared locks
 template<class Key, class Value, class Hash = typename std::hash<Key>>
 class TSHashMap
 {
@@ -53,6 +53,7 @@ private:
 	std::vector<Bucket> m_buckets;
 	Hash m_hasher;
 public:
+	// It is recommended to set numBuckets to a prime number
 	TSHashMap(size_t numBuckets = 19) : m_numBuckets(numBuckets), m_buckets(numBuckets) {}
 	TSHashMap(const TSHashMap&) = delete;
 	TSHashMap& operator=(const TSHashMap&) = delete;
