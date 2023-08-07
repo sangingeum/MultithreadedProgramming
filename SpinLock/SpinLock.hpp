@@ -1,15 +1,15 @@
 #pragma once
 #include <atomic>
 
-// SpinLock class implemented with std::atomic_flag 
+// SpinLock implemented with std::atomic_flag 
 // std::atomic_flag is guaranteed to be lock-free
-// Do not use it in practice => Busy Waiting, Priority Inversion
+// Busy Waiting, Priority Inversion
 class SpinLock
 {
 	std::atomic_flag m_flag = ATOMIC_FLAG_INIT; // Initially set to false
 public:
 	void lock() {
-		while(m_flag.test_and_set(std::memory_order_acquire)){}
+		while(m_flag.test_and_set(std::memory_order_acquire)){} // Consider adding std::this_thread::yield(); to the loop
 	}
 	void unlock() {
 		m_flag.clear(std::memory_order_release);
