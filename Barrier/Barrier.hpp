@@ -5,7 +5,7 @@
 
 /* Note:
 #include <barrier>
-Use std::barrier instead of this implementation.
+In practice, use std::barrier instead of this implementation.
 */
 
 
