@@ -26,9 +26,7 @@ public:
 		std::unique_lock lock{m_mutex};
 		m_currentCount++;
 		if (m_currentCount == m_expectedCount) {
-			cleanUp();
-			lock.unlock();
-			m_cond.notify_all();
+			performCompletion(std::move(lock));
 		}
 		else {
 			unsigned stop = m_stop;
@@ -39,18 +37,14 @@ public:
 		std::unique_lock lock{m_mutex};
 		m_expectedCount--;
 		if (m_currentCount == m_expectedCount) {
-			cleanUp();
-			lock.unlock();
-			m_cond.notify_all();
+			performCompletion(std::move(lock));
 		}
 	}
 	void arrive() {
 		std::unique_lock lock{m_mutex};
 		m_currentCount++;
 		if (m_currentCount == m_expectedCount) {
-			cleanUp();
-			lock.unlock();
-			m_cond.notify_all();
+			performCompletion(std::move(lock));
 		}
 	}
 	void wait() {
@@ -60,11 +54,13 @@ public:
 	}
 
 private:
-	inline void cleanUp() {
+	// Caution: This method unlocks the given lock
+	inline void performCompletion(std::unique_lock<std::mutex>&& lock) {
 		m_completionFunction();
 		m_currentCount = 0;
 		m_stop++;
+		lock.unlock();
+		m_cond.notify_all();
 	}
-
 };
 

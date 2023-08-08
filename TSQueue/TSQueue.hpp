@@ -27,8 +27,9 @@ public:
 template <class T>
 void TSQueue<T>::push(T item) {
 	auto itemPtr = std::make_shared<T>(std::move(item));
-	std::scoped_lock lock{m_mutex};
+	std::unique_lock lock{m_mutex};
 	m_data.push(itemPtr);
+	lock.unlock();
 	m_cond.notify_one();
 }
 
