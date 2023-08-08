@@ -9,7 +9,7 @@ class SpinLock
 	std::atomic_flag m_flag = ATOMIC_FLAG_INIT; // Initially set to false
 public:
 	void lock() {
-		while(m_flag.test_and_set(std::memory_order_acquire)){} // Consider adding std::this_thread::yield(); to the loop
+		while(m_flag.test_and_set(std::memory_order_acquire)){} // Consider adding std::this_thread::yield(); inside the loop if tasks have long lifetimes
 	}
 	void unlock() {
 		m_flag.clear(std::memory_order_release);
