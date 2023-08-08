@@ -3,6 +3,11 @@
 #include <condition_variable>
 #include <atomic>
 
+/* Note:
+#include <semaphore>
+In practice, use std::counting_semaphore or std::binary_semaphore instead
+*/
+
 // Semaphore implemented with a mutex and a condition variable
 class Semaphore
 {
@@ -10,7 +15,7 @@ class Semaphore
 	std::mutex m_mutex;
 	std::condition_variable m_cond;
 public:
-	// At most 'count' threads can aquire the lock
+	// At most 'count' threads can acquire the lock
 	Semaphore(unsigned count) : m_counter(count){}
 	void acquire() {
 		std::unique_lock lock{m_mutex};
@@ -26,7 +31,3 @@ public:
 	}
 };
 
-/* Note:
-#include <semaphore>
-In practice, use std::counting_semaphore or std::binary_semaphore instead
-*/
