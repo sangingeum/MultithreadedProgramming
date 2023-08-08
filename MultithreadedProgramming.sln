@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpinLock", "SpinLock\SpinLo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TicketLock", "TicketLock\TicketLock.vcxproj", "{79FFA5F3-AAEA-493B-A8CF-21F88689D51E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Semaphore", "Semaphore\Semaphore.vcxproj", "{085485E9-77B5-404D-A669-4CBB3C797399}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{79FFA5F3-AAEA-493B-A8CF-21F88689D51E}.Release|x64.Build.0 = Release|x64
 		{79FFA5F3-AAEA-493B-A8CF-21F88689D51E}.Release|x86.ActiveCfg = Release|Win32
 		{79FFA5F3-AAEA-493B-A8CF-21F88689D51E}.Release|x86.Build.0 = Release|Win32
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Debug|x64.ActiveCfg = Debug|x64
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Debug|x64.Build.0 = Debug|x64
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Debug|x86.ActiveCfg = Debug|Win32
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Debug|x86.Build.0 = Debug|Win32
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Release|x64.ActiveCfg = Release|x64
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Release|x64.Build.0 = Release|x64
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Release|x86.ActiveCfg = Release|Win32
+		{085485E9-77B5-404D-A669-4CBB3C797399}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
