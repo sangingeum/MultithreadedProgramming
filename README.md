@@ -5,6 +5,7 @@ This repository contains implementations of various classes useful in multithrea
 ### Synchronization Primitive
 * Semaphore
 * Barrier
+* Latch
 ### Lock
 * Spin Lock
 * Ticket Lock
