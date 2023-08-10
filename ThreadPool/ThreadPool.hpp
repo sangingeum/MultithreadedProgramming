@@ -8,31 +8,29 @@
 
 class ThreadPool
 {	
-	bool m_done{ false };
 	size_t m_numThreads;
 	TSQueue<std::function<void()>> m_queue;
 	std::vector<std::jthread> m_threads;
 public:
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
-
 	ThreadPool(size_t numThreads = std::thread::hardware_concurrency())
 		: m_numThreads(numThreads)
 	{	
 		try
 		{
 			for (size_t i = 0; i < m_numThreads; ++i) {
-				m_threads.emplace_back(&ThreadPool::work, this);
+				m_threads.emplace_back(std::bind_front(&ThreadPool::work, this));
 			}
 		}
 		catch (const std::exception&)
 		{
-			m_done = true;
+			stopAllThreads();
 			throw;
 		}
 	}
 	~ThreadPool() {
-		m_done = true;
+		stopAllThreads();
 	}
 
 	template <class Func>
@@ -46,14 +44,19 @@ public:
 
 
 private:
-	void work() {
-		while (!m_done) {
+	void work(std::stop_token token) {
+		while (!token.stop_requested()) {
 			std::function<void()> task;
 			if (m_queue.tryPop(task))
 				task();
 			else
 				std::this_thread::yield();
 		}
+	}
+
+	void stopAllThreads() {
+		for (auto& thread : m_threads)
+			thread.request_stop();
 	}
 
 };
