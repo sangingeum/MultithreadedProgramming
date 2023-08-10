@@ -10,6 +10,7 @@ This repository contains implementations of various classes useful in multithrea
 * Hash Map
 ### Thread Management
 * Thread Pool
+* Work Stealing Thread Pool
 ### Synchronization Primitive
 * Semaphore
 * Barrier
