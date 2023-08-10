@@ -6,7 +6,9 @@
 #include <memory>
 #include "TSQueue.hpp"
 
-// Thread pool class for managing threads
+// Thread pool with a centralized queue
+// Potentially high contention on the queue
+// Poor cache utilization - tasks frequently move between processors
 class ThreadPool
 {
 private:
@@ -18,7 +20,8 @@ public:
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
 	// Constructor: Initialize the thread pool with a specified number of threads
-	ThreadPool(size_t numThreads = std::thread::hardware_concurrency());
+	// Leave 2 cores unused for other applications or the OS
+	ThreadPool(size_t numThreads = std::max(std::thread::hardware_concurrency() - 2, 1u));
 	// Destructor: Stop all threads in the pool
 	~ThreadPool();
 	// Submit a callable task to the thread pool and returns a future for the result

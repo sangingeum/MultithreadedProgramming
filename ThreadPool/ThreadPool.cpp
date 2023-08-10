@@ -1,6 +1,6 @@
 #include "ThreadPool.hpp"
 
-// Constructor: Initializes the thread pool with a specified number of threads
+// Constructor: Initialize the thread pool with a specified number of threads
 ThreadPool::ThreadPool(size_t numThreads)
 	: m_numThreads(numThreads)
 {
@@ -17,7 +17,7 @@ ThreadPool::ThreadPool(size_t numThreads)
 	}
 }
 
-// Destructor: Stops all threads
+// Destructor: Stop all threads in the pool
 ThreadPool::~ThreadPool() {
 	stopAllThreads();
 }
