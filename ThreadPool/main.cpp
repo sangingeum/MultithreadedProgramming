@@ -31,7 +31,7 @@ int main() {
 	std::vector<std::future<int>> intFutures;
 
 	// Submit tasks to the pool
-	// std::function, std::bind, lambda, and function name can be passed 
+	// std::function, std::bind, lambdas, and function names can be passed as an argument to the submit method
 	std::vector<int> vec {1, 3, 5, 7};
 	for (size_t i = 0; i < 10; ++i) {
 		voidFutures.emplace_back(pool.submit(sayHi));

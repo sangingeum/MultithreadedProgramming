@@ -6,23 +6,32 @@
 #include <memory>
 #include "TSQueue.hpp"
 
+// Thread pool class for managing threads
 class ThreadPool
-{	
-	size_t m_numThreads;
-	TSQueue<std::function<void()>> m_queue;
-	std::vector<std::jthread> m_threads;
+{
+private:
+	size_t m_numThreads; // Number of threads in the thread pool
+	TSQueue<std::function<void()>> m_queue; // Thread-safe queue to hold tasks
+	std::vector<std::jthread> m_threads; // Vector to store thread objects
 public:
+	// Delete copy constructor and copy assignment operator
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
+	// Constructor: Initialize the thread pool with a specified number of threads
 	ThreadPool(size_t numThreads = std::thread::hardware_concurrency());
+	// Destructor: Stop all threads in the pool
 	~ThreadPool();
+	// Submit a callable task to the thread pool and returns a future for the result
 	template <class Func>
 	std::future<typename std::invoke_result<Func>::type> submit(Func func);
 private:
+	// Worker function for each thread
 	void work(std::stop_token token);
+	// Stop all threads in the pool
 	void stopAllThreads();
 };
 
+// Submits a callable task to the thread pool and returns a future for the result
 template <class Func>
 std::future<typename std::invoke_result<Func>::type> ThreadPool::submit(Func func) {
 	using ResultType = typename std::invoke_result<Func>::type;
