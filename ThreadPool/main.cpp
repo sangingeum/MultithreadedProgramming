@@ -7,7 +7,7 @@ void hi() {
 }
 
 int main() {
-	ThreadPool pool(1);
+	ThreadPool pool;
 	std::vector<std::future<void>> futures;
 	for (size_t i = 0; i < 100; ++i) {
 		futures.emplace_back(pool.submit(hi));

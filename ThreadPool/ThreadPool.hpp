@@ -13,6 +13,9 @@ class ThreadPool
 	TSQueue<std::function<void()>> m_queue;
 	std::vector<std::jthread> m_threads;
 public:
+	ThreadPool(const ThreadPool&) = delete;
+	ThreadPool& operator=(const ThreadPool&) = delete;
+
 	ThreadPool(size_t numThreads = std::thread::hardware_concurrency())
 		: m_numThreads(numThreads)
 	{	
@@ -25,6 +28,7 @@ public:
 		catch (const std::exception&)
 		{
 			m_done = true;
+			throw;
 		}
 	}
 	~ThreadPool() {
