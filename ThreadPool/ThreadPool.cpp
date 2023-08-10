@@ -5,7 +5,8 @@ ThreadPool::ThreadPool(size_t numThreads)
 	: m_numThreads(numThreads)
 {
 	try
-	{
+	{	
+		m_threads.reserve(numThreads);
 		for (size_t i = 0; i < m_numThreads; ++i) {
 			m_threads.emplace_back(std::bind_front(&ThreadPool::work, this));
 		}
