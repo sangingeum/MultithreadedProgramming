@@ -6,6 +6,7 @@ This repository contains implementations of various classes useful in multithrea
 ### Lock-based Thread-safe Data Structure
 * Stack
 * Queue
+* Deque
 * Hash Map
 ### Thread Management
 * Thread Pool
