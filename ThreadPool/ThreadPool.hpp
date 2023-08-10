@@ -14,51 +14,23 @@ class ThreadPool
 public:
 	ThreadPool(const ThreadPool&) = delete;
 	ThreadPool& operator=(const ThreadPool&) = delete;
-	ThreadPool(size_t numThreads = std::thread::hardware_concurrency())
-		: m_numThreads(numThreads)
-	{	
-		try
-		{
-			for (size_t i = 0; i < m_numThreads; ++i) {
-				m_threads.emplace_back(std::bind_front(&ThreadPool::work, this));
-			}
-		}
-		catch (const std::exception&)
-		{
-			stopAllThreads();
-			throw;
-		}
-	}
-	~ThreadPool() {
-		stopAllThreads();
-	}
-
+	ThreadPool(size_t numThreads = std::thread::hardware_concurrency());
+	~ThreadPool();
 	template <class Func>
-	std::future<typename std::invoke_result<Func>::type> submit(Func func) {
-		using ResultType = typename std::invoke_result<Func>::type;
-		std::packaged_task<ResultType()> task{std::move(func)};
-		auto future{task.get_future()};
-		// Wrap the packaged task with a lambda function to store it in the queue
-		m_queue.push([t = std::make_shared<decltype(task)>(std::move(task))]() { (*t)(); });
-		return future;
-	}
-
-
+	std::future<typename std::invoke_result<Func>::type> submit(Func func);
 private:
-	void work(std::stop_token token) {
-		while (!token.stop_requested()) {
-			std::function<void()> task;
-			if (m_queue.tryPop(task))
-				task();
-			else
-				std::this_thread::yield();
-		}
-	}
-
-	void stopAllThreads() {
-		for (auto& thread : m_threads)
-			thread.request_stop();
-	}
-
+	void work(std::stop_token token);
+	void stopAllThreads();
 };
+
+template <class Func>
+std::future<typename std::invoke_result<Func>::type> ThreadPool::submit(Func func) {
+	using ResultType = typename std::invoke_result<Func>::type;
+	std::packaged_task<ResultType()> task{std::move(func)};
+	auto future{ task.get_future() };
+	// Wrap the packaged task with a lambda function to store it in the queue
+	m_queue.push([t = std::make_shared<decltype(task)>(std::move(task))]() { (*t)(); });
+	return future;
+}
+
 
