@@ -2,59 +2,88 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <format>
+#include <random>
+#include <algorithm>
+#include <chrono>
 
 // Create a thread pool
 WSThreadPool pool;
+std::vector<std::future<void>> futures;
 
-void saySomething(const std::string& something) {
-	std::cout << something + "\n";
+void sort(std::vector<int>& vec, size_t from, size_t to) {
+	if (from >= to || to >= vec.size())
+		return;
+	const static size_t chunkSize = 1500000;
+	//std::cout << std::format("from{}, to{}\n", from, to);
+	auto pivot = vec[to];
+	auto begin = vec.begin();
+	auto midIt = std::partition(begin + from, begin + to,
+		[pivot](const int& item) { return item < pivot; });
+	size_t mid = midIt - begin;
+	//std::cout << std::format("from{}, to{}, mid{}\n", from, to, mid);
+	std::swap(vec[to], vec[mid]);
+
+	if (to - from < chunkSize) {
+		sort(vec, mid + 1, to);
+		sort(vec, from, mid - 1);
+	}
+	else {
+		if (mid - from < chunkSize) {
+			futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), from, mid - 1)));
+			sort(vec, mid + 1, to);
+		}
+		else {
+			if (to - mid < chunkSize) {
+				futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), mid + 1, to)));
+				sort(vec, from, mid - 1);
+			}
+			else {
+				sort(vec, mid + 1, to);
+				sort(vec, from, mid - 1);
+			}
+		}
+	}
 }
 
-void sayHi() {
-	std::cout << "Hi\n";
-	pool.submit([]() {saySomething("Hi Again"); });
+void parallelSort(std::vector<int>& vec) {
+	sort(vec, 0, vec.size() - 1);
+	for (auto& future : futures) {
+		future.wait();
+	}
 }
 
-std::vector<int> accumulate(const std::vector<int>& vec) {
-	auto result = vec;
-	for (size_t i = 1; i < result.size(); ++i)
-		result[i] = std::move(result[i]) + result[i - 1];
-	return result;
-}
-
-int five() {
-	return 5;
-}
 int main() {
+	// Make a random vector of length 10000000
+	std::random_device rd;  
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> distribution(-100000, 100000); 
+	std::vector<int> randomVector(10000000);
+	std::generate(randomVector.begin(), randomVector.end(), [&]() {
+		return distribution(gen);
+		});
+	// Make a copy of the vector
+	auto copy = randomVector;
+	// Sort the random vector using threads in the thread pool
+	auto t1 = std::chrono::steady_clock::now();
+	parallelSort(randomVector);
+	// Sort the copied vector using std::sort
+	auto t2 = std::chrono::steady_clock::now();
+	std::sort(copy.begin(), copy.end());
+	auto t3 = std::chrono::steady_clock::now();
+
+	// Check if the results are the same
+	std::cout << "Results are the same: " << std::boolalpha << (randomVector == copy) << "\n";
 	
-	// Containers for futures
-	std::vector<std::future<void>> voidFutures;
-	std::vector<std::future<std::vector<int>>> vecFutures;
-	std::vector<std::future<int>> intFutures;
+	// Check time taken for each sorting
+	std::cout << "Time taken for parallel sorting: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "ms\n";
+	std::cout << "Time taken for std::sort: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "ms\n";
 
-	// Submit tasks to the pool
-	// std::function, std::bind, lambdas, and function names can be passed as an argument to the submit method
-	std::vector<int> vec {1, 3, 5, 7};
-	for (size_t i = 0; i < 10; ++i) {
-		voidFutures.emplace_back(pool.submit(sayHi));
-		voidFutures.emplace_back(pool.submit([]() {saySomething("Something"); }));
-		vecFutures.emplace_back(pool.submit(std::bind(accumulate, std::cref(vec))));
-		intFutures.emplace_back(pool.submit(five));
-	}
-
-	// Join and print the results
-	for (auto& future : voidFutures) {
-		future.get();
-	}
-	for (auto& future : vecFutures) {
-		auto vec = future.get();
-		for (auto num : vec)
-			std::cout << num << " ";
-		std::cout << "\n";
-	}
-	for (auto& future : intFutures) {
-		std::cout << future.get() << "\n";
-	}
+	/*
+	Results are the same: true
+	Time taken for parallel sorting: 14594ms
+	Time taken for std::sort: 3877ms
+	*/
 
 	return 0;
 }
