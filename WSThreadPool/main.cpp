@@ -9,7 +9,6 @@
 
 // Create a thread pool
 WSThreadPool pool;
-std::vector<std::future<void>> futures;
 
 // Median of Three partition
 size_t partition(std::vector<int>& arr, size_t p, size_t r) {
@@ -39,13 +38,12 @@ size_t partition(std::vector<int>& arr, size_t p, size_t r) {
 }
 
 
+
 void sort(std::vector<int>& vec, size_t from, size_t to) {
 	if (from >= to || to >= vec.size())
 		return;
-	const static size_t chunkSize = 1500000;
+	const static size_t chunkSize = 500000;
 	size_t mid = partition(vec, from, to);
-
-	std::swap(vec[to], vec[mid]);
 
 	if (to - from < chunkSize) {
 		sort(vec, mid + 1, to);
@@ -53,13 +51,19 @@ void sort(std::vector<int>& vec, size_t from, size_t to) {
 	}
 	else {
 		if (mid - from > chunkSize) {
-			futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), from, mid - 1)));
+			auto future = pool.submit(std::bind(sort, std::ref(vec), from, mid - 1));
 			sort(vec, mid + 1, to);
+			while (!WSThreadPool::isFutureReady(future))
+				pool.runPendingTask();
+			future.get();
 		}
 		else {
 			if (to - mid > chunkSize) {
-				futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), mid + 1, to)));
+				auto future = pool.submit(std::bind(sort, std::ref(vec), mid + 1, to));
 				sort(vec, from, mid - 1);
+				while (!WSThreadPool::isFutureReady(future))
+					pool.runPendingTask();
+				future.get();
 			}
 			else {
 				sort(vec, mid + 1, to);
@@ -71,9 +75,6 @@ void sort(std::vector<int>& vec, size_t from, size_t to) {
 
 void parallelSort(std::vector<int>& vec) {
 	sort(vec, 0, vec.size() - 1);
-	for (auto& future : futures) {
-		future.wait();
-	}
 }
 
 int main() {
@@ -103,9 +104,9 @@ int main() {
 	std::cout << "Time taken for std::sort: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "ms\n";
 
 	/*
-	Results are the same: false
-	Time taken for parallel sorting: 1300ms
-	Time taken for std::sort: 3638ms
+	Results are the same: true
+	Time taken for parallel sorting: 787ms
+	Time taken for std::sort: 3517ms
 	*/
 	
 	return 0;

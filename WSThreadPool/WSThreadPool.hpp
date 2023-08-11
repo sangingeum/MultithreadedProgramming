@@ -45,6 +45,15 @@ public:
 			throw;
 		}
 	}
+
+	void runPendingTask() {
+		std::function<void()> task;
+		if (getWork(task))
+			task();
+		else
+			std::this_thread::yield();
+	}
+
 	// Destructor: Stop all threads in the pool
 	~WSThreadPool() {
 		stopAllThreads();
@@ -52,6 +61,12 @@ public:
 	// Submit a callable task to the thread pool and returns a future for the result
 	template <class Func>
 	std::future<typename std::invoke_result<Func>::type> submit(Func func);
+
+	template <class T>
+	static bool isFutureReady(std::future<T>& future) {
+		return future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+	}
+
 private:
 	// Worker function for each thread
 	void work(size_t threadIndex, std::stop_token token) {
@@ -68,7 +83,7 @@ private:
 
 	bool getWork(std::function<void()>& task) {
 		// Search local queue
-		if (m_localQueue->tryPop(task))
+		if (m_localQueue && m_localQueue->tryPop(task))
 			return true;
 		// Search main queue
 		if (m_mainQueue.tryPop(task))
