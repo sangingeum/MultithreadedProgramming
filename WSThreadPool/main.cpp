@@ -11,17 +11,40 @@
 WSThreadPool pool;
 std::vector<std::future<void>> futures;
 
+// Median of Three partition
+size_t partition(std::vector<int>& arr, size_t p, size_t r) {
+	size_t randomIndex1 = (rand() % (r - p + 1)) + p;
+	size_t randomIndex2 = (rand() % (r - p + 1)) + p;
+	size_t randomIndex3 = (rand() % (r - p + 1)) + p;
+	size_t medianIndex;
+	if ((arr[randomIndex1] < arr[randomIndex2] && arr[randomIndex2] < arr[randomIndex3]) ||
+		(arr[randomIndex3] < arr[randomIndex2] && arr[randomIndex2] < arr[randomIndex1]))
+		medianIndex = randomIndex2;
+	else if ((arr[randomIndex2] < arr[randomIndex1] && arr[randomIndex1] < arr[randomIndex3]) ||
+		(arr[randomIndex3] < arr[randomIndex1] && arr[randomIndex1] < arr[randomIndex2]))
+		medianIndex = randomIndex1;
+	else
+		medianIndex = randomIndex3;
+	std::swap(arr[medianIndex], arr[r]);
+
+	auto x = arr[r];
+	size_t i = p;
+	for (size_t j = p; j < r; ++j) {
+		if (arr[j] < x) {
+			std::swap(arr[i++], arr[j]);
+		}
+	}
+	std::swap(arr[i], arr[r]);
+	return i;
+}
+
+
 void sort(std::vector<int>& vec, size_t from, size_t to) {
 	if (from >= to || to >= vec.size())
 		return;
 	const static size_t chunkSize = 1500000;
-	//std::cout << std::format("from{}, to{}\n", from, to);
-	auto pivot = vec[to];
-	auto begin = vec.begin();
-	auto midIt = std::partition(begin + from, begin + to,
-		[pivot](const int& item) { return item < pivot; });
-	size_t mid = midIt - begin;
-	//std::cout << std::format("from{}, to{}, mid{}\n", from, to, mid);
+	size_t mid = partition(vec, from, to);
+
 	std::swap(vec[to], vec[mid]);
 
 	if (to - from < chunkSize) {
@@ -29,12 +52,12 @@ void sort(std::vector<int>& vec, size_t from, size_t to) {
 		sort(vec, from, mid - 1);
 	}
 	else {
-		if (mid - from < chunkSize) {
+		if (mid - from > chunkSize) {
 			futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), from, mid - 1)));
 			sort(vec, mid + 1, to);
 		}
 		else {
-			if (to - mid < chunkSize) {
+			if (to - mid > chunkSize) {
 				futures.emplace_back(pool.submit(std::bind(sort, std::ref(vec), mid + 1, to)));
 				sort(vec, from, mid - 1);
 			}
@@ -80,10 +103,10 @@ int main() {
 	std::cout << "Time taken for std::sort: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "ms\n";
 
 	/*
-	Results are the same: true
-	Time taken for parallel sorting: 14594ms
-	Time taken for std::sort: 3877ms
+	Results are the same: false
+	Time taken for parallel sorting: 1300ms
+	Time taken for std::sort: 3638ms
 	*/
-
+	
 	return 0;
 }
