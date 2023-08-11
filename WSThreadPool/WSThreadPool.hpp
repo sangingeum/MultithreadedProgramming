@@ -27,85 +27,25 @@ public:
 	WSThreadPool& operator=(const WSThreadPool&) = delete;
 	// Constructor: Initialize the thread pool with a specified number of threads
 	// Leave 2 cores unused for other applications or the OS
-	WSThreadPool(size_t numThreads = std::max(std::thread::hardware_concurrency() - 2, 1u)) 
-		: m_numThreads(numThreads)
-	{
-		m_queues.reserve(numThreads);
-		for (size_t i = 0; i < numThreads; ++i)
-			m_queues.emplace_back(std::unique_ptr<WorkQueue>(new WorkQueue()));
-		m_threads.reserve(numThreads);
-		try
-		{
-			for (size_t i = 0; i < numThreads; ++i)
-				m_threads.emplace_back(std::bind(&WSThreadPool::work, this, i, std::placeholders::_1));
-		}
-		catch (const std::exception&)
-		{
-			stopAllThreads();
-			throw;
-		}
-	}
-
-	void runPendingTask() {
-		std::function<void()> task;
-		if (getWork(task))
-			task();
-		else
-			std::this_thread::yield();
-	}
-
+	WSThreadPool(size_t numThreads = std::max(std::thread::hardware_concurrency() - 2, 1u));
+	// Run a pending task if any
+	void runPendingTask();
 	// Destructor: Stop all threads in the pool
-	~WSThreadPool() {
-		stopAllThreads();
-	}
+	~WSThreadPool();
 	// Submit a callable task to the thread pool and returns a future for the result
 	template <class Func>
 	std::future<typename std::invoke_result<Func>::type> submit(Func func);
-
+	// Check if the given future is ready
 	template <class T>
-	static bool isFutureReady(std::future<T>& future) {
-		return future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-	}
-
+	static bool isFutureReady(std::future<T>& future);
 private:
 	// Worker function for each thread
-	void work(size_t threadIndex, std::stop_token token) {
-		m_threadIndex = threadIndex;
-		m_localQueue = m_queues[threadIndex].get();
-		while (!token.stop_requested()) {
-			std::function<void()> task;
-			if (getWork(task))
-				task();
-			else
-				std::this_thread::yield();
-		}
-	}
-
-	bool getWork(std::function<void()>& task) {
-		// Search local queue
-		if (m_localQueue && m_localQueue->tryPop(task))
-			return true;
-		// Search main queue
-		if (m_mainQueue.tryPop(task))
-			return true;
-		// Steal work from other queues
-		for (size_t i = 1; i < m_numThreads; ++i) {
-			size_t nextIndex = (m_threadIndex + i) % m_numThreads;
-			if (m_queues[nextIndex]->tryPopBack(task))
-				return true;
-		}
-		return false;
-	}
-
+	void work(size_t threadIndex, std::stop_token token);
+	// Take or steal an available task
+	bool getWork(std::function<void()>& task);
 	// Stop all threads in the pool
-	void stopAllThreads() {
-		for (auto& thread : m_threads)
-			thread.request_stop();
-	}
-
+	void stopAllThreads();
 };
-
-
 
 // Submits a callable task to the thread pool and returns a future for the result
 template <class Func>
@@ -114,11 +54,15 @@ std::future<typename std::invoke_result<Func>::type> WSThreadPool::submit(Func f
 	std::packaged_task<ResultType()> task{std::move(func)};
 	auto future{ task.get_future() };
 	// Wrap the packaged task with a lambda function to store it in the queue
-	if(m_localQueue)
+	if (m_localQueue)
 		m_localQueue->push([t = std::make_shared<decltype(task)>(std::move(task))]() { (*t)(); });
 	else
 		m_mainQueue.push([t = std::make_shared<decltype(task)>(std::move(task))]() { (*t)(); });
 	return future;
 }
 
-
+// Check if the given future is ready
+template <class T>
+static bool WSThreadPool::isFutureReady(std::future<T>& future) {
+	return future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}

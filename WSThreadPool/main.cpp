@@ -105,7 +105,6 @@ int main() {
 
 	/*
 	Results are the same: true
-	Time taken for parallel sorting: 787ms
 	Time taken for parallel sorting: 558ms
 	Time taken for std::sort: 3510ms
 	*/
