@@ -23,6 +23,15 @@ ThreadPool::~ThreadPool() {
 	stopAllThreads();
 }
 
+// Run a pending task if any
+void ThreadPool::runPendingTask() {
+	std::function<void()> task;
+	if (m_queue.tryPop(task))
+		task();
+	else
+		std::this_thread::yield();
+}
+
 // Worker function for each thread
 void ThreadPool::work(std::stop_token token) {
 	while (!token.stop_requested()) {

@@ -42,7 +42,7 @@ size_t partition(std::vector<int>& arr, size_t p, size_t r) {
 void sort(std::vector<int>& vec, size_t from, size_t to) {
 	if (from >= to || to >= vec.size())
 		return;
-	const static size_t chunkSize = 500000;
+	const static size_t chunkSize = 100000;
 	size_t mid = partition(vec, from, to);
 
 	if (to - from < chunkSize) {
@@ -106,7 +106,8 @@ int main() {
 	/*
 	Results are the same: true
 	Time taken for parallel sorting: 787ms
-	Time taken for std::sort: 3517ms
+	Time taken for parallel sorting: 558ms
+	Time taken for std::sort: 3510ms
 	*/
 	
 	return 0;

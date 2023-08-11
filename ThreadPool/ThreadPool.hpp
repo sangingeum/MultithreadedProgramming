@@ -24,9 +24,14 @@ public:
 	ThreadPool(size_t numThreads = std::max(std::thread::hardware_concurrency() - 2, 1u));
 	// Destructor: Stop all threads in the pool
 	~ThreadPool();
+	// Run a pending task if any
+	void runPendingTask();
 	// Submit a callable task to the thread pool and returns a future for the result
 	template <class Func>
 	std::future<typename std::invoke_result<Func>::type> submit(Func func);
+	// Check if the given future is ready
+	template <class T>
+	static bool isFutureReady(std::future<T>& future);
 private:
 	// Worker function for each thread
 	void work(std::stop_token token);
@@ -45,4 +50,8 @@ std::future<typename std::invoke_result<Func>::type> ThreadPool::submit(Func fun
 	return future;
 }
 
-
+// Check if the given future is ready
+template <class T>
+bool ThreadPool::isFutureReady(std::future<T>& future) {
+	return future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
