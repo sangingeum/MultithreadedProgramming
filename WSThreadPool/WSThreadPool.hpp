@@ -32,7 +32,7 @@ public:
 	void runPendingTask();
 	// Destructor: Stop all threads in the pool
 	~WSThreadPool();
-	// Submit a callable task to the thread pool and returns a future for the result
+	// Submit a callable task to the thread pool and return a future for the result
 	template <class Func>
 	std::future<typename std::invoke_result<Func>::type> submit(Func func);
 	// Check if the given future is ready

@@ -8,7 +8,7 @@
 #include <chrono>
 
 // Create a thread pool
-WSThreadPool pool;
+WSThreadPool pool(12);
 
 // Median of Three partition
 size_t partition(std::vector<int>& arr, size_t p, size_t r) {
@@ -38,44 +38,34 @@ size_t partition(std::vector<int>& arr, size_t p, size_t r) {
 }
 
 
-
 void sort(std::vector<int>& vec, size_t from, size_t to) {
-	if (from >= to || to >= vec.size())
-		return;
 	const static size_t chunkSize = 100000;
+	if (from >= to || to >= vec.size()) // 'to >= vec.size()' is needed to check if 'to' is underflowed
+		return;
 	size_t mid = partition(vec, from, to);
-
+	// Do small jobs on your own
 	if (to - from < chunkSize) {
 		sort(vec, mid + 1, to);
 		sort(vec, from, mid - 1);
 	}
+	// Pass the smaller job to the pool
 	else {
-		if (mid - from > chunkSize) {
-			auto future = pool.submit(std::bind(sort, std::ref(vec), from, mid - 1));
+		std::future<void> future;
+		if (mid - from < to - mid) {
+			future = pool.submit(std::bind(sort, std::ref(vec), from, mid - 1));
 			sort(vec, mid + 1, to);
-			while (!WSThreadPool::isFutureReady(future))
-				pool.runPendingTask();
-			future.get();
 		}
 		else {
-			if (to - mid > chunkSize) {
-				auto future = pool.submit(std::bind(sort, std::ref(vec), mid + 1, to));
-				sort(vec, from, mid - 1);
-				while (!WSThreadPool::isFutureReady(future))
-					pool.runPendingTask();
-				future.get();
-			}
-			else {
-				sort(vec, mid + 1, to);
-				sort(vec, from, mid - 1);
-			}
+			future = pool.submit(std::bind(sort, std::ref(vec), mid + 1, to));
+			sort(vec, from, mid - 1);
 		}
+		// Run other jobs in the pool if the future is not ready
+		while (!WSThreadPool::isFutureReady(future))
+			pool.runPendingTask();
+		future.get();
 	}
 }
 
-void parallelSort(std::vector<int>& vec) {
-	sort(vec, 0, vec.size() - 1);
-}
 
 int main() {
 	// Make a random vector of length 10000000
@@ -90,7 +80,7 @@ int main() {
 	auto copy = randomVector;
 	// Sort the random vector using threads in the thread pool
 	auto t1 = std::chrono::steady_clock::now();
-	parallelSort(randomVector);
+	sort(randomVector, 0, randomVector.size() - 1);
 	// Sort the copied vector using std::sort
 	auto t2 = std::chrono::steady_clock::now();
 	std::sort(copy.begin(), copy.end());
@@ -105,8 +95,8 @@ int main() {
 
 	/*
 	Results are the same: true
-	Time taken for parallel sorting: 558ms
-	Time taken for std::sort: 3510ms
+	Time taken for parallel sorting: 604ms
+	Time taken for std::sort: 3898ms
 	*/
 	
 	return 0;
