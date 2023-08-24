@@ -63,19 +63,25 @@ public:
 private:
 	// Reclaim node memory if there is only one thread running the pop operation
 	void tryReclaim(Node* node) {
-		if (threadsInPop == 1) {
+		if (threadsInPop == 1) { // There is only one thread in the pop function 
+			// Free 'nodesToDelete' if 'threadsInPop' hasn't changed while fetching it
 			Node* toDelete = nodesToDelete.exchange(nullptr);
 			if (--threadsInPop) {
-				if (toDelete)
+				// 'threadsInPop' has changed. Give back the retrieved nodes
+				if (toDelete) {
 					chainToBeDeletedNode(toDelete, findLastNode(toDelete));
+				}
 			}
-			else
+			else {
 				deleteNodes(toDelete);
+			}
+			// 'node' can be freed
 			delete node;
 		}
 		else {
-			if(node)
+			if (node) {
 				chainToBeDeletedNode(node);
+			}
 			--threadsInPop;
 		}
 	}
@@ -98,12 +104,12 @@ private:
 		}
 	}
 
-	// chain a given node to the to be deleted node list
+	// append the given node to 'nodesToDelete'
 	void chainToBeDeletedNode(Node* node) {
 		chainToBeDeletedNode(node, node);
 	}
 
-	// chain given nodes to the to be deleted node list
+	// append the given nodes from head to tail to 'nodesToDelete'
 	void chainToBeDeletedNode(Node* head, Node* tail) {
 		tail->next = nodesToDelete.load();
 		while (!nodesToDelete.compare_exchange_weak(tail->next, head));
