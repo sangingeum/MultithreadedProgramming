@@ -12,7 +12,7 @@ std::latch latch{iter * 3}; // Make sure the threads start at the same time
 
 void push(LFStack<int>& stack) {
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 10000; ++i) {
+	for (size_t i = 0; i < 100000; ++i) {
 		stack.push(i);
 	}
 }
@@ -20,7 +20,7 @@ void push(LFStack<int>& stack) {
 std::vector<int> tryPopRef(LFStack<int>& stack) {
 	std::vector<int> result;
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 5000; ++i) {
+	for (size_t i = 0; i < 50000; ++i) {
 		int item;
 		while (!stack.tryPop(item)) {}
 		result.push_back(item);
@@ -31,7 +31,7 @@ std::vector<int> tryPopRef(LFStack<int>& stack) {
 std::vector<int> tryPopPtr(LFStack<int>& stack) {
 	std::vector<int> result;
 	latch.arrive_and_wait();
-	for (size_t i = 0; i < 5000; ++i) {
+	for (size_t i = 0; i < 50000; ++i) {
 		int item;
 		std::shared_ptr<int> data;
 		while (!(data = stack.tryPop())) {}
@@ -47,19 +47,19 @@ int main() {
 	std::vector<std::future<std::vector<int>>> futures;
 	std::vector<std::jthread> threads;
 
-	// Launch threads that push 10000 integers to the stack 
+	// Launch threads that push 100000 integers to the stack 
 	for (size_t i = 0; i < iter; ++i) {
 		threads.emplace_back(push, std::ref(stack));
 	}
 
-	// Launch threads that pops 5000 pushed integers using the tryPopRef function
+	// Launch threads that pops 50000 pushed integers using the tryPopRef function
 	for (size_t i = 0; i < iter; ++i) {
 		std::packaged_task<std::vector<int>(LFStack<int>&)> popTask{tryPopRef};
 		futures.emplace_back(popTask.get_future());
 		threads.emplace_back(std::move(popTask), std::ref(stack));
 	}
 
-	// Launch threads that pops 5000 pushed integers using the tryPopPtr function
+	// Launch threads that pops 50000 pushed integers using the tryPopPtr function
 	for (size_t i = 0; i < iter; ++i) {
 		std::packaged_task<std::vector<int>(LFStack<int>&)> popTask{tryPopPtr};
 		futures.emplace_back(popTask.get_future());

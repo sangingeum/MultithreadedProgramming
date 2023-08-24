@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <atomic>
-#include <iostream>
+
 // Lock-free Thread-safe Stack implemented with atomic variables
 // It assumes that std::atomic<Node*>::is_lock_free() is true
 template <class T>
