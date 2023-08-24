@@ -1,8 +1,9 @@
 #pragma once
 #include <memory>
 #include <atomic>
-
+#include <iostream>
 // Lock-free Thread-safe Stack implemented with atomic variables
+// It assumes that std::atomic<Node*>::is_lock_free() is true
 template <class T>
 class LFStack
 {
@@ -11,15 +12,16 @@ private:
 	struct Node
 	{
 		std::shared_ptr<T> data;
-		Node* next;
+		Node* next{ nullptr };
 		Node(T data_) : data(std::make_shared<T>(std::move(data_))) {}
 	};
 	// Head and thread counter
 	std::atomic<Node*> head {nullptr};
 	std::atomic<Node*> nodesToDelete{ nullptr };
 	static std::atomic<unsigned> threadsInPop;
-
+	
 public:
+
 	// push data using the CAS(compare and swap) operation
 	void push(T data) {
 		Node* newNode{ new Node(std::move(data)) };
@@ -61,22 +63,21 @@ public:
 private:
 	// Reclaim node memory if there is only one thread running the pop operation
 	void tryReclaim(Node* node) {
-		if (node) {
-			chainToBeDeletedNode(node);
-			if (threadsInPop == 1) {
-				Node* toDelete = nodesToDelete.exchange(nullptr);
-				if (--threadsInPop) {
+		if (threadsInPop == 1) {
+			Node* toDelete = nodesToDelete.exchange(nullptr);
+			if (--threadsInPop) {
+				if (toDelete)
 					chainToBeDeletedNode(toDelete, findLastNode(toDelete));
-				}
-				else {
-					deleteNodes(toDelete);
-				}
 			}
 			else
-				--threadsInPop;
+				deleteNodes(toDelete);
+			delete node;
 		}
-		else
+		else {
+			if(node)
+				chainToBeDeletedNode(node);
 			--threadsInPop;
+		}
 	}
 
 	// find the last node of the given node
