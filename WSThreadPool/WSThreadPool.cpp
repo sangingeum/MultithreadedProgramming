@@ -2,7 +2,7 @@
 
 
 // Constructor: Initialize the thread pool with a specified number of threads
-	// Leave 2 cores unused for other applications or the OS
+// Leave 2 cores unused for other applications or the OS
 WSThreadPool::WSThreadPool(size_t numThreads)
 	: m_numThreads(numThreads)
 {
@@ -21,6 +21,7 @@ WSThreadPool::WSThreadPool(size_t numThreads)
 		throw;
 	}
 }
+
 // Run a pending task if any
 void WSThreadPool::runPendingTask() {
 	std::function<void()> task;
@@ -60,7 +61,7 @@ bool WSThreadPool::getWork(std::function<void()>& task) {
 	// Steal a work from other queues
 	for (size_t i = 1; i < m_numThreads; ++i) {
 		size_t nextIndex = (m_threadIndex + i) % m_numThreads;
-		if (m_queues[nextIndex]->tryPopBack(task))
+		if (m_queues[nextIndex]->tryPop(task))
 			return true;
 	}
 	return false;

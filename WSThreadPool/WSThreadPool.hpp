@@ -5,18 +5,17 @@
 #include <type_traits>
 #include <vector>
 #include <memory>
-#include "TSDeque.hpp"
+#include "FTSQueue.hpp"
 
 // This code should be inside the class, but I couldn't find a way to do so...
-static thread_local TSDeque<std::function<void()>>* m_localQueue;
+static thread_local FTSQueue<std::function<void()>>* m_localQueue;
 static thread_local size_t m_threadIndex;
-//
 
 // Work stealing thread pool with distrubuted queues for each thread and a main queue
 class WSThreadPool
 {
 private:
-	using WorkQueue = TSDeque<std::function<void()>>;
+	using WorkQueue = FTSQueue<std::function<void()>>;
 	size_t m_numThreads; // Number of threads in the thread pool
 	WorkQueue m_mainQueue;
 	std::vector<std::unique_ptr<WorkQueue>> m_queues;

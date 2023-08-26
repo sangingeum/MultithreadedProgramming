@@ -37,7 +37,7 @@ size_t partition(std::vector<int>& arr, size_t p, size_t r) {
 	return i;
 }
 
-
+// Parallel sort
 void sort(std::vector<int>& vec, size_t from, size_t to) {
 	const static size_t chunkSize = 100000;
 	if (from >= to || to >= vec.size()) // 'to >= vec.size()' is needed to check if 'to' is underflowed
