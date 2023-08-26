@@ -128,6 +128,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="FTSQueue.hpp" />
     <ClInclude Include="TSQueue.hpp" />
   </ItemGroup>
   <ItemGroup>

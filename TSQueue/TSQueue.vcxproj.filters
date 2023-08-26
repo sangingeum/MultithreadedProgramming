@@ -18,6 +18,9 @@
     <ClInclude Include="TSQueue.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FTSQueue.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
