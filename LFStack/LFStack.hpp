@@ -4,6 +4,7 @@
 
 // Lock-free Thread-safe Stack implemented with atomic variables
 // It assumes that std::atomic<Node*>::is_lock_free() is true
+// TODO: relax memory order
 template <class T>
 class LFStack
 {
@@ -16,11 +17,13 @@ private:
 		Node(T data_) : data(std::make_shared<T>(std::move(data_))) {}
 	};
 	// Head and thread counter
-	std::atomic<Node*> head {nullptr};
+	std::atomic<Node*> head{ nullptr };
 	std::atomic<Node*> nodesToDelete{ nullptr };
 	static std::atomic<unsigned> threadsInPop;
-	
+
 public:
+	// Deconstructor: pop all data left
+	~LFStack() { T temp; while (tryPop(temp)); }
 
 	// push data using the CAS(compare and swap) operation
 	void push(T data) {
@@ -46,7 +49,7 @@ public:
 
 	// try popping a stored data instance
 	// return a bool variable indicating whether the retrieval was successful or not
-	// retrieved data will be stored in the given reference if successful 
+	// retrieved data will be stored in the given reference if successful
 	bool tryPop(T& result) {
 		++threadsInPop;
 		Node* popped{ head.load() };
@@ -63,7 +66,7 @@ public:
 private:
 	// Reclaim node memory if there is only one thread running the pop operation
 	void tryReclaim(Node* node) {
-		if (threadsInPop == 1) { // There is only one thread in the pop function 
+		if (threadsInPop == 1) { // There is only one thread in the pop function
 			// Free 'nodesToDelete' if 'threadsInPop' hasn't changed while fetching it
 			Node* toDelete = nodesToDelete.exchange(nullptr);
 			if (--threadsInPop) {
@@ -119,4 +122,4 @@ private:
 
 // Init statit member
 template<class T>
-std::atomic<unsigned> LFStack<T>::threadsInPop {0};
+std::atomic<unsigned> LFStack<T>::threadsInPop{ 0 };

@@ -32,7 +32,6 @@ std::vector<int> tryPopPtr(LFStack<int>& stack) {
 	std::vector<int> result;
 	latch.arrive_and_wait();
 	for (size_t i = 0; i < 50000; ++i) {
-		int item;
 		std::shared_ptr<int> data;
 		while (!(data = stack.tryPop())) {}
 		result.push_back(std::move(*data));
