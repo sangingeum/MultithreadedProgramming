@@ -12,18 +12,14 @@ WSThreadPool pool(12);
 
 // Median of Three partition
 size_t partition(std::vector<int>& arr, size_t p, size_t r) {
-	size_t randomIndex1 = (rand() % (r - p + 1)) + p;
-	size_t randomIndex2 = (rand() % (r - p + 1)) + p;
-	size_t randomIndex3 = (rand() % (r - p + 1)) + p;
+	size_t mid = (p+r)/2;
 	size_t medianIndex;
-	if ((arr[randomIndex1] < arr[randomIndex2] && arr[randomIndex2] < arr[randomIndex3]) ||
-		(arr[randomIndex3] < arr[randomIndex2] && arr[randomIndex2] < arr[randomIndex1]))
-		medianIndex = randomIndex2;
-	else if ((arr[randomIndex2] < arr[randomIndex1] && arr[randomIndex1] < arr[randomIndex3]) ||
-		(arr[randomIndex3] < arr[randomIndex1] && arr[randomIndex1] < arr[randomIndex2]))
-		medianIndex = randomIndex1;
+	if ((arr[p] < arr[mid] && arr[mid] < arr[r]) || (arr[r] < arr[mid] && arr[mid] < arr[p]))
+		medianIndex = mid;
+	else if ((arr[mid] < arr[p] && arr[p] < arr[r]) || (arr[r] < arr[p] && arr[p] < arr[mid]))
+		medianIndex = p;
 	else
-		medianIndex = randomIndex3;
+		medianIndex = r;
 	std::swap(arr[medianIndex], arr[r]);
 
 	auto x = arr[r];
@@ -95,8 +91,8 @@ int main() {
 
 	/*
 	Results are the same: true
-	Time taken for parallel sorting: 604ms
-	Time taken for std::sort: 3898ms
+	Time taken for parallel sorting: 589ms
+	Time taken for std::sort: 3488ms
 	*/
 	
 	return 0;

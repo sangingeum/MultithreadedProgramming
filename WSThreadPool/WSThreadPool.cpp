@@ -61,7 +61,7 @@ bool WSThreadPool::getWork(std::function<void()>& task) {
 	// Steal a work from other queues
 	for (size_t i = 1; i < m_numThreads; ++i) {
 		size_t nextIndex = (m_threadIndex + i) % m_numThreads;
-		if (m_queues[nextIndex]->tryPop(task))
+		if (m_queues[nextIndex]->tryPopBack(task))
 			return true;
 	}
 	return false;
